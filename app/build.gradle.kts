@@ -56,5 +56,5 @@ dependencies {
     implementation("com.github.mik3y:usb-serial-for-android:3.9.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.compose.material:material-icons-extended")
-
+    implementation(libs.androidx.compose.material.icons.extended)
 }
