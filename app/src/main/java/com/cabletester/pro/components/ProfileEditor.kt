@@ -29,7 +29,7 @@ import com.cabletester.pro.model.PinConnection
 import com.cabletester.pro.service.BluetoothService
 import com.cabletester.pro.service.USBService
 import com.cabletester.pro.viewmodel.TestComparison
-import androidx.compose.ui.graphics.Color
+
 private enum class ConnectionType {
     USB,
     BLUETOOTH
@@ -127,16 +127,11 @@ fun ProfileEditor(
         mutableStateOf<List<BluetoothDevice>>(emptyList())
     }
 
-    /*
-     * Android 12+ zahteva BLUETOOTH_CONNECT
-     * kot runtime permission.
-     */
     val bluetoothPermissionLauncher =
         rememberLauncherForActivityResult(
             contract =
                 ActivityResultContracts.RequestPermission()
         ) { granted ->
-
             if (granted) {
                 pairedDevices =
                     bluetoothService.getPairedDevices()
@@ -149,25 +144,16 @@ fun ProfileEditor(
                 }
             } else {
                 connecting = false
-
                 connectionStatus =
                     "Bluetooth dovoljenje ni odobreno."
             }
         }
 
-    /*
-     * USB odklop.
-     */
     DisposableEffect(usbService) {
-
         usbService.setOnDisconnectedListener {
-
             mainHandler.post {
-
                 connecting = false
-
                 onArduinoConnectionChanged(false)
-
                 connectionStatus =
                     "Arduino je odklopljen."
             }
@@ -178,19 +164,11 @@ fun ProfileEditor(
         }
     }
 
-    /*
-     * Bluetooth odklop.
-     */
     DisposableEffect(bluetoothService) {
-
         bluetoothService.setOnDisconnectedListener {
-
             mainHandler.post {
-
                 connecting = false
-
                 onArduinoConnectionChanged(false)
-
                 connectionStatus =
                     "Bluetooth Arduino je odklopljen."
             }
@@ -201,14 +179,9 @@ fun ProfileEditor(
         }
     }
 
-    /*
-     * Ob izhodu iz ProfileEditorja zapremo povezave.
-     */
     DisposableEffect(Unit) {
-
         onDispose {
             bluetoothService.shutdown()
-
             try {
                 usbService.disconnect()
             } catch (_: Exception) {
@@ -216,14 +189,7 @@ fun ProfileEditor(
         }
     }
 
-    /*
-     * SELF LEARN.
-     *
-     * Trenutni SelfLearnScreen še uporablja USBService.
-     * Bluetooth za SELF LEARN dodava v naslednjem koraku.
-     */
     if (showSelfLearnScreen) {
-
         SelfLearnScreen(
             articleCode = profile.articleCode,
             articleName = profile.name,
@@ -236,7 +202,6 @@ fun ProfileEditor(
                 showSelfLearnScreen = false
             }
         )
-
         return
     }
 
@@ -257,35 +222,22 @@ fun ProfileEditor(
     }
 
     LaunchedEffect(profile) {
-
-        articleCode =
-            profile.articleCode
-
-        articleName =
-            profile.articleName
-
-        notes =
-            profile.notes
+        articleCode = profile.articleCode
+        articleName = profile.articleName
+        notes = profile.notes
     }
 
-    /*
-     * Bluetooth naprave.
-     */
     if (showBluetoothDevices) {
-
         AlertDialog(
             onDismissRequest = {
                 if (!connecting) {
                     showBluetoothDevices = false
                 }
             },
-
             title = {
                 Text("Izberi Bluetooth napravo")
             },
-
             text = {
-
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -293,17 +245,12 @@ fun ProfileEditor(
                             rememberScrollState()
                         )
                 ) {
-
                     if (pairedDevices.isEmpty()) {
-
                         Text(
                             "Ni seznanjenih naprav."
                         )
-
                     } else {
-
                         pairedDevices.forEach { device ->
-
                             val deviceName =
                                 try {
                                     device.name
@@ -322,29 +269,13 @@ fun ProfileEditor(
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(
-                                        vertical = 4.dp
-                                    )
-                                    .clickable(
-                                        enabled = !connecting
-                                    ) {
-
-                                        showBluetoothDevices =
-                                            false
-
+                                    .padding(vertical = 4.dp)
+                                    .clickable(enabled = !connecting) {
+                                        showBluetoothDevices = false
                                         connecting = true
+                                        connectionStatus = "Povezujem $deviceName..."
 
-                                        connectionStatus =
-                                            "Povezujem $deviceName..."
-
-                                        /*
-                                         * Če smo bili prej na USB,
-                                         * ga odklopimo.
-                                         */
-                                        if (
-                                            connectionType ==
-                                            ConnectionType.USB
-                                        ) {
+                                        if (connectionType == ConnectionType.USB) {
                                             try {
                                                 usbService.disconnect()
                                             } catch (_: Exception) {
@@ -353,59 +284,34 @@ fun ProfileEditor(
 
                                         bluetoothService.connect(
                                             device = device,
-
                                             onConnected = {
-
                                                 mainHandler.post {
-
                                                     connecting = false
-
-                                                    connectionType =
-                                                        ConnectionType.BLUETOOTH
-
-                                                    connectionStatus =
-                                                        ""
-
-                                                    onArduinoConnectionChanged(
-                                                        true
-                                                    )
+                                                    connectionType = ConnectionType.BLUETOOTH
+                                                    connectionStatus = ""
+                                                    onArduinoConnectionChanged(true)
                                                 }
                                             },
                                             onError = { error ->
                                                 mainHandler.post {
                                                     connecting = false
-                                                    onArduinoConnectionChanged(
-                                                        false
-                                                    )
-                                                    connectionStatus =
-                                                        error
+                                                    onArduinoConnectionChanged(false)
+                                                    connectionStatus = error
                                                 }
                                             }
                                         )
                                     }
                             ) {
                                 Column(
-                                    modifier = Modifier.padding(
-                                        12.dp
-                                    )
+                                    modifier = Modifier.padding(12.dp)
                                 ) {
                                     Text(
                                         deviceName,
-                                        style =
-                                            MaterialTheme
-                                                .typography
-                                                .titleMedium
+                                        style = MaterialTheme.typography.titleMedium
                                     )
-                                    if (
-                                        deviceAddress
-                                            .isNotBlank()
-                                    ) {
-                                        Text(
-                                            deviceAddress,
-                                            style =
-                                                MaterialTheme
-                                                    .typography
-                                                    .bodySmall
+                                    if (deviceAddress.isNotBlank()) {
+                                        Text(deviceAddress,
+                                            style = MaterialTheme.typography.bodySmall
                                         )
                                     }
                                 }
@@ -428,12 +334,9 @@ fun ProfileEditor(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(
-                rememberScrollState()
-            )
+            .verticalScroll(rememberScrollState())
             .padding(10.dp),
-        verticalArrangement =
-            Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Card(
             Modifier.fillMaxWidth()
@@ -455,7 +358,6 @@ fun ProfileEditor(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-
             FilterChip(
                 selected = connectionType == ConnectionType.USB,
                 onClick = {
@@ -463,15 +365,12 @@ fun ProfileEditor(
                         try {
                             bluetoothService.disconnect()
                         } catch (_: Exception) {}
-
                         connectionType = ConnectionType.USB
                         connectionStatus = ""
                         onArduinoConnectionChanged(false)
                     }
                 },
-                label = {
-                    Text("USB")
-                },
+                label = { Text("USB") },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Usb,
@@ -481,7 +380,6 @@ fun ProfileEditor(
                 },
                 modifier = Modifier.weight(1f)
             )
-
             FilterChip(
                 selected = connectionType == ConnectionType.BLUETOOTH,
                 onClick = {
@@ -489,15 +387,12 @@ fun ProfileEditor(
                         try {
                             usbService.disconnect()
                         } catch (_: Exception) {}
-
                         connectionType = ConnectionType.BLUETOOTH
                         connectionStatus = ""
                         onArduinoConnectionChanged(false)
                     }
                 },
-                label = {
-                    Text("Bluetooth")
-                },
+                label = { Text("Bluetooth") },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Bluetooth,
@@ -508,142 +403,81 @@ fun ProfileEditor(
                 modifier = Modifier.weight(1f)
             )
         }
-        /*
-        * POVEZAVA Z ARDUINOM
-        */
         if (!isArduinoConnected) {
             Button(
                 onClick = {
                     connecting = true
                     connectionStatus = ""
-                    if (
-                        connectionType ==
-                        ConnectionType.USB
-                    ) {
-                        connectionStatus =
-                            "Iščem Arduino CH340..."
-                        val device =
-                            usbService.findArduino()
+                    if (connectionType == ConnectionType.USB) {
+                        connectionStatus = "Iščem Arduino CH340..."
+                        val device = usbService.findArduino()
                         if (device == null) {
                             connecting = false
-                            connectionStatus =
-                                "Arduino CH340 ni najden " +
-                                        "ali naprava ni podprta."
+                            connectionStatus = "Arduino CH340 ni najden ali naprava ni podprta."
                         } else {
-                            usbService.requestUsbPermission(
-                                device
-                            ) { granted ->
+                            usbService.requestUsbPermission(device) { granted ->
                                 if (granted) {
                                     usbService.connect(
                                         device = device,
                                         onConnected = {
                                             mainHandler.post {
-                                                connecting =
-                                                    false
-                                                connectionStatus =
-                                                    ""
-                                                onArduinoConnectionChanged(
-                                                    true
-                                                )
+                                                connecting = false
+                                                connectionStatus = ""
+                                                onArduinoConnectionChanged(true)
                                             }
                                         },
                                         onError = { error ->
                                             mainHandler.post {
-                                                connecting =
-                                                    false
-                                                connectionStatus =
-                                                    error
-                                                onArduinoConnectionChanged(
-                                                    false
-                                                )
+                                                connecting = false
+                                                connectionStatus = error
+                                                onArduinoConnectionChanged(false)
                                             }
                                         }
                                     )
                                 } else {
                                     mainHandler.post {
-                                        connecting =
-                                            false
-                                        connectionStatus =
-                                            "USB dovoljenje ni odobreno."
-                                        onArduinoConnectionChanged(
-                                            false
-                                        )
+                                        connecting = false
+                                        connectionStatus = "USB dovoljenje ni odobreno."
+                                        onArduinoConnectionChanged(false)
                                     }
                                 }
                             }
                         }
                     } else {
-                        /*
-                        * BLUETOOTH
-                        */
-                        if (
-                            !bluetoothService
-                                .isBluetoothSupported()
-                        ) {
+                        if (!bluetoothService.isBluetoothSupported()) {
                             connecting = false
-                            connectionStatus =
-                                "Naprava ne podpira Bluetootha."
-                        } else if (
-                            !bluetoothService
-                                .isBluetoothEnabled()
-                        ) {
+                            connectionStatus = "Naprava ne podpira Bluetootha."
+                        } else if (!bluetoothService.isBluetoothEnabled()) {
                             connecting = false
-                            connectionStatus =
-                                "Bluetooth ni vklopljen."
+                            connectionStatus = "Bluetooth ni vklopljen."
                         } else {
-                            if (
-                                Build.VERSION.SDK_INT >=
-                                Build.VERSION_CODES.S
-                            ) {
-                                val permission =
-                                    Manifest.permission
-                                        .BLUETOOTH_CONNECT
-                                val granted =
-                                    androidx.core.content
-                                        .ContextCompat
-                                        .checkSelfPermission(
-                                            context,
-                                            permission
-                                        ) ==
-                                            android.content.pm
-                                                .PackageManager
-                                                .PERMISSION_GRANTED
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                val permission = Manifest.permission.BLUETOOTH_CONNECT
+                                val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+                                    context,
+                                    permission
+                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
                                 if (!granted) {
-                                    bluetoothPermissionLauncher
-                                        .launch(permission)
+                                    bluetoothPermissionLauncher.launch(permission)
                                     connecting = false
                                 } else {
-                                    pairedDevices =
-                                        bluetoothService
-                                            .getPairedDevices()
-                                    if (
-                                        pairedDevices.isEmpty()
-                                    ) {
+                                    pairedDevices = bluetoothService.getPairedDevices()
+                                    if (pairedDevices.isEmpty()) {
                                         connecting = false
-                                        connectionStatus =
-                                            "Najprej seznani HC-05 " +
-                                                    "v nastavitvah Bluetootha."
+                                        connectionStatus = "Najprej seznani HC-05 v nastavitvah Bluetootha."
                                     } else {
                                         connecting = false
-                                        showBluetoothDevices =
-                                            true
+                                        showBluetoothDevices = true
                                     }
                                 }
                             } else {
-                                pairedDevices =
-                                    bluetoothService
-                                        .getPairedDevices()
-                                if (
-                                    pairedDevices.isEmpty()
-                                ) {
+                                pairedDevices = bluetoothService.getPairedDevices()
+                                if (pairedDevices.isEmpty()) {
                                     connecting = false
-                                    connectionStatus =
-                                        "Ni najdenih seznanjenih " +
-                                                "Bluetooth naprav."
+                                    connectionStatus = "Ni najdenih seznanjenih Bluetooth naprav."
                                 } else {
                                     connecting = false
-                                    showBluetoothDevices =
-                                        true
+                                    showBluetoothDevices = true
                                 }
                             }
                         }
@@ -651,23 +485,17 @@ fun ProfileEditor(
                 },
                 enabled = !connecting,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF78909C), // Isti modro-sivi odtenek
-                    contentColor = Color.White          // Bela barva za ikono in besedilo
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(64.dp)
             ) {
                 val (currentIcon, buttonLabel) = when {
-                    connecting -> {
-                        Icons.Default.HourglassEmpty to "POVEZOVANJE..."
-                    }
-                    connectionType == ConnectionType.BLUETOOTH -> {
-                        Icons.Default.Bluetooth to "POVEŽI TESTER preko BT"
-                    }
-                    else -> {
-                        Icons.Default.Usb to "POVEŽI TESTER preko USB-C"
-                    }
+                    connecting -> Icons.Default.HourglassEmpty to "POVEZOVANJE..."
+                    connectionType == ConnectionType.BLUETOOTH -> Icons.Default.Bluetooth to "POVEŽI TESTER preko BT"
+                    else -> Icons.Default.Usb to "POVEŽI TESTER preko USB-C"
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -688,9 +516,6 @@ fun ProfileEditor(
         if (connectionStatus.isNotBlank()) {
             Text(connectionStatus)
         }
-        /*
-        * INFORMACIJA O AKTIVNI POVEZAVI
-        */
         if (isArduinoConnected) {
             Card(
                 Modifier.fillMaxWidth()
@@ -725,27 +550,19 @@ fun ProfileEditor(
                 }
             }
         }
-        /*
-        * TEST
-        */
         Button(
             onClick = {
                 testing = true
-                testStatus =
-                    "Testiranje kabla..."
+                testStatus = "Testiranje kabla..."
                 rawResponse = ""
                 testComparison = null
                 comparisonMessage = ""
-                /*
-                * Skupna funkcija za obdelavo odgovora.
-                */
-                /*
- * Skupna funkcija za obdelavo odgovora.
- */
+
                 fun handleResponse(response: String) {
                     rawResponse = response
                     val trimmedResponse = response.trim()
 
+                    // POPRAVLJENO: Dodan tip <PinConnection> za List
                     val measuredConnections: List<PinConnection> = if (trimmedResponse == "NO_CONNECTIONS") {
                         emptyList()
                     } else {
@@ -760,6 +577,7 @@ fun ProfileEditor(
                         val parsed = parts.mapNotNull { part ->
                             val match = regex.matchEntire(part)
                             if (match != null) {
+                                // POPRAVLJENO: Pravilno pobiranje skupin [1] in [2]
                                 PinConnection(
                                     fromChannel = match.groupValues[1],
                                     toChannel = match.groupValues[2]
@@ -770,13 +588,12 @@ fun ProfileEditor(
                         }.distinct()
 
                         if (parts.isEmpty() || parsed.size != parts.size) {
-                            emptyList() // Če je odgovor neveljaven, vrnemo prazen seznam
+                            emptyList()
                         } else {
                             parsed
                         }
                     }
 
-                    // Ker measuredConnections zdaj ni več null, lahko varno pokličemo onTest
                     val result = onTest(measuredConnections)
 
                     if (result == null) {
@@ -795,102 +612,62 @@ fun ProfileEditor(
                             testStatus = "Test ni uspešen."
                         }
                     }
-
                     testing = false
                 }
 
-                /*
-                * TEST PREK USB
-                */
-                if (
-                    connectionType ==
-                    ConnectionType.USB
-                ) {
+                if (connectionType == ConnectionType.USB) {
                     usbService.sendTest(
                         onResult = { response ->
-                            mainHandler.post {
-                                handleResponse(
-                                    response
-                                )
-                            }
+                            mainHandler.post { handleResponse(response) }
                         },
                         onError = { error ->
                             mainHandler.post {
-                                testStatus =
-                                    error
+                                testStatus = error
                                 comparisonMessage = ""
                                 testing = false
-                                if (
-                                    error.contains(
-                                        "Arduino",
-                                        ignoreCase = true
-                                    ) ||
-                                    error.contains(
-                                        "USB",
-                                        ignoreCase = true
-                                    ) ||
-                                    error.contains(
-                                        "port",
-                                        ignoreCase = true
-                                    ) ||
-                                    error.contains(
-                                        "device",
-                                        ignoreCase = true
-                                    )
+                                if (error.contains("Arduino", ignoreCase = true) ||
+                                    error.contains("USB", ignoreCase = true) ||
+                                    error.contains("port", ignoreCase = true) ||
+                                    error.contains("device", ignoreCase = true)
                                 ) {
                                     usbService.disconnect()
                                     connecting = false
-                                    onArduinoConnectionChanged(
-                                        false
-                                    )
-                                    connectionStatus =
-                                        "Arduino je odklopljen."
+                                    onArduinoConnectionChanged(false)
+                                    connectionStatus = "Arduino je odklopljen."
                                 }
                             }
                         }
                     )
                 } else {
-                    /*
-                    * TEST PREK BLUETOOTH
-                    */
                     bluetoothService.sendTest(
                         onResult = { response ->
-                            mainHandler.post {
-                                handleResponse(
-                                    response
-                                )
-                            }
+                            mainHandler.post { handleResponse(response) }
                         },
                         onError = { error ->
                             mainHandler.post {
-                                testStatus =
-                                    error
+                                testStatus = error
                                 comparisonMessage = ""
                                 testing = false
                                 bluetoothService.disconnect()
                                 connecting = false
-                                onArduinoConnectionChanged(
-                                    false
-                                )
-                                connectionStatus =
-                                    "Bluetooth Arduino je odklopljen."
+                                onArduinoConnectionChanged(false)
+                                connectionStatus = "Bluetooth Arduino je odklopljen."
                             }
                         }
                     )
                 }
             },
-            enabled =
-                isArduinoConnected &&
-                        !testing,
+            enabled = isArduinoConnected && !testing,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF1A73E8), // Opazna barva za glavno akcijo
-                contentColor = Color.White          // barva besedila/ikone na gumbu
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(90.dp)
         ) {
-            val testLabel = if (testing) "TESTIRANJE..." else "TEST"
+
+        val testLabel = if (testing) "TESTIRANJE..." else "TEST"
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -909,24 +686,17 @@ fun ProfileEditor(
             }
         }
         if (!isArduinoConnected) {
-            Text(
-                "Za testiranje najprej poveži Arduino."
-            )
+            Text("Za testiranje najprej poveži Arduino.")
         }
-        /*
-        * REZULTAT TESTA
-        */
         if (testComparison != null) {
-
             val result = testComparison!!
-
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
                     containerColor = if (result.passed) {
-                        Color(0xFF43A047) // Živo zelena
+                        MaterialTheme.colorScheme.tertiary
                     } else {
-                        Color(0xFFFA0000) // Živo rdeča
+                        MaterialTheme.colorScheme.error
                     }
                 )
             ) {
@@ -941,34 +711,28 @@ fun ProfileEditor(
                             "❌ FAIL – KABEL NI USTREZEN"
                         },
                         style = MaterialTheme.typography.titleLarge,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onTertiary
                     )
-
                     Text(
                         text = testStatus,
-                        color = Color.White.copy(alpha = 0.9f)
+                        color = MaterialTheme.colorScheme.onTertiary.copy(alpha = 0.9f)
                     )
-
                     if (result.errors.isNotEmpty()) {
-
-                        HorizontalDivider(color = Color.White.copy(alpha = 0.3f))
-
+                        HorizontalDivider(color = MaterialTheme.colorScheme.onTertiary.copy(alpha = 0.3f))
                         Text(
                             text = "Ugotovljene napake:",
                             style = MaterialTheme.typography.titleMedium,
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onTertiary
                         )
-
                         result.errors.forEach { error ->
                             Text(
                                 text = "• $error",
-                                color = Color.White
+                                color = MaterialTheme.colorScheme.onTertiary
                             )
                         }
                     }
                 }
             }
-
         } else if (comparisonMessage.isNotBlank()) {
             Card(
                 modifier = Modifier.fillMaxWidth()
@@ -983,10 +747,6 @@ fun ProfileEditor(
         } else if (testStatus.isNotBlank()) {
             Text(testStatus)
         }
-
-        /*
-         * IZMERJENE POVEZAVE / STATISTIKA
-         */
         if (rawResponse.isNotBlank()) {
             Card(
                 modifier = Modifier.fillMaxWidth()
@@ -994,9 +754,7 @@ fun ProfileEditor(
                 Column(
                     modifier = Modifier.padding(12.dp)
                 ) {
-                    Text(
-                        text = "Izmerjene povezave:"
-                    )
+                    Text(text = "Izmerjene povezave:")
                     Text(rawResponse)
                 }
             }
@@ -1014,126 +772,82 @@ fun ProfileEditor(
                             "Referenčni vzorec: NI NAUČEN"
                         }
                     )
-
                     Text(text = "Naučene povezave: ${profile.connections.size}")
-
                     if (profile.referenceLearned) {
                         Text(text = "Zadnje učenje: ${profile.learnedDate}")
                     }
-
                     Text(text = "Zadnji test: ${profile.lastTest}")
                     Text(text = "Uspešni testi: ${profile.passedTests}")
                     Text(text = "Neuspešni testi: ${profile.failedTests}")
                 }
             }
         }
-
-        /*
-        * UREJANJE PROFILA
-        */
         Button(
-            onClick = {
-                editMode = !editMode
-            },
+            onClick = { editMode = !editMode },
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF78909C), // Umirjena modro-siva barva
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary
             ),
-            modifier =
-                Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                if (editMode) {
-                    "SKRIJ UREJANJE"
-                } else {
-                    "UREDI PROFIL"
-                }
-            )
+            Text(if (editMode) "SKRIJ UREJANJE" else "UREDI PROFIL")
         }
         if (editMode) {
             HorizontalDivider()
-            Text(
-                "Urejanje profila"
-            )
+            Text("Urejanje profila")
             OutlinedTextField(
                 value = articleCode,
-                onValueChange = {
-                    articleCode = it
-                },
-                label = {
-                    Text("Koda artikla")
-                },
-                modifier =
-                    Modifier.fillMaxWidth()
+                onValueChange = { articleCode = it },
+                label = { Text("Koda artikla") },
+                modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = articleName,
-                onValueChange = {
-                    articleName = it
-                },
-                label = {
-                    Text("Naziv artikla")
-                },
-                modifier =
-                    Modifier.fillMaxWidth()
+                onValueChange = { articleName = it },
+                label = { Text("Naziv artikla") },
+                modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = notes,
-                onValueChange = {
-                    notes = it
-                },
-                label = {
-                    Text("Opombe")
-                },
-                modifier =
-                    Modifier.fillMaxWidth()
+                onValueChange = { notes = it },
+                label = { Text("Opombe") },
+                modifier = Modifier.fillMaxWidth()
             )
             Button(
                 onClick = {
                     onSave(
                         profile.copy(
-                            articleCode =
-                                articleCode,
-                            articleName =
-                                articleName,
-                            notes =
-                                notes
+                            articleCode = articleCode,
+                            articleName = articleName,
+                            notes = notes
                         )
                     )
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF78909C), // Isti modro-sivi odtenek kot za "Uredi profil"
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
                 ),
-                modifier =
-                    Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text("SHRANI")
             }
             Button(
-                onClick = {
-                    showSelfLearnScreen = true
-                },
+                onClick = { showSelfLearnScreen = true },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF78909C), // Isti modro-sivi odtenek kot za "Uredi profil"
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
                 ),
-                modifier =
-                    Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text("SELF LEARN")
             }
             Button(
                 onClick = onDelete,
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor =
-                            MaterialTheme
-                                .colorScheme
-                                .error
-                    ),
-                modifier =
-                    Modifier.fillMaxWidth()
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                ),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text("IZBRIŠI PROFIL")
             }

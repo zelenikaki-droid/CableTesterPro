@@ -5,35 +5,42 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color // POPRAVEK: Dodan manjkajoči uvoz za Color
 
+// Prenovljena svetla tema brez rdečih gumbov
 private val LightColorScheme = lightColorScheme(
-    primary = RedPrimary,
-    onPrimary = WhiteBackground,
-    secondary = RedDark,
-    onSecondary = WhiteBackground,
-    tertiary = RedPrimary,
-    background = WhiteBackground,
-    onBackground = DarkText,
-    surface = WhiteBackground,
-    onSurface = DarkText,
-    error = RedDark
+    primary = IndigoPrimary,           // Gumb TEST bo indigo moder
+    onPrimary = Color.White,           // Belo besedilo na indigo gumbu
+    secondary = LightComponent,        // Nevtralni gumbi bodo svetlo sivi
+    onSecondary = LightText,           // Temen tekst na sivih gumbih
+    tertiary = LightStatusPass,        // Rezultat: PASS (Zelena)
+    onTertiary = Color.White,
+    background = LightBg,              // Svetlo sivo-belo ozadje zaslona
+    onBackground = LightText,          // Temen tekst za splošna obvestila
+    surface = LightSurface,            // Bele kartice profilov
+    onSurface = LightText,
+    surfaceVariant = LightComponent,
+    onSurfaceVariant = LightText,
+    error = LightStatusFail,           // Rezultat: FAIL (Rdeča)
+    onError = Color.White
 )
 
+// Preverjena temna tema
 private val DarkColorScheme = darkColorScheme(
-    primary = ElectricBlue,
-    onPrimary = DarkBg,
-    secondary = DarkComponent,
-    onSecondary = LightText,
-    tertiary = StatusPass,
-    onTertiary = LightText,
-    background = DarkBg,
-    onBackground = LightText,
-    surface = DarkSurface,
-    onSurface = LightText,
+    primary = ElectricBlue,            // Gumb TEST bo električno moder
+    onPrimary = DarkBg,                // Temen tekst na modrem gumbu
+    secondary = DarkComponent,         // Nevtralni gumbi bodo srednje sivi
+    onSecondary = DarkText,            // Svetel tekst na sivih gumbih
+    tertiary = DarkStatusPass,         // Rezultat: PASS (Zelena)
+    onTertiary = DarkText,
+    background = DarkBg,               // Globoko temno ozadje zaslona
+    onBackground = DarkText,           // Svetel tekst za splošna obvestila
+    surface = DarkSurface,             // Temno sive kartice profilov
+    onSurface = DarkText,
     surfaceVariant = DarkComponent,
-    onSurfaceVariant = LightText,
-    error = StatusFail,
-    onError = LightText
+    onSurfaceVariant = DarkText,
+    error = DarkStatusFail,            // Rezultat: FAIL (Rdeča)
+    onError = DarkText
 )
 
 @Composable

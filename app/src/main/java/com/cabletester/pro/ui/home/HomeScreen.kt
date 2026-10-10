@@ -236,8 +236,8 @@ fun HomeScreen(
                     viewModel.createProfile()
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF78909C), // Isti modro-sivi odtenek
-                    contentColor = Color.White          // Bela barva za ikono in besedilo
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
                 ),
                 modifier = Modifier
                     .fillMaxWidth()

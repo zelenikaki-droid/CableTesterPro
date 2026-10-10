@@ -1,4 +1,3 @@
-
 package com.cabletester.pro.components
 
 import android.os.Handler
@@ -151,6 +150,10 @@ fun SelfLearnScreen(
                 enabled = isArduinoConnected &&
                         !learning &&
                         !learned,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
@@ -160,7 +163,8 @@ fun SelfLearnScreen(
         } else {
             Text(
                 "✅ REFERENČNI VZOREC SHRANJEN",
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.tertiary
             )
 
             Text("Naučenih povezav: ${learnedConnections.size}")
@@ -182,6 +186,10 @@ fun SelfLearnScreen(
 
         Button(
             onClick = onBack,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary
+            ),
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("NAZAJ")
