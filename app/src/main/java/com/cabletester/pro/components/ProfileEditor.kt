@@ -29,7 +29,7 @@ import com.cabletester.pro.model.PinConnection
 import com.cabletester.pro.service.BluetoothService
 import com.cabletester.pro.service.USBService
 import com.cabletester.pro.viewmodel.TestComparison
-
+import androidx.compose.ui.graphics.Color
 private enum class ConnectionType {
     USB,
     BLUETOOTH
@@ -453,18 +453,20 @@ fun ProfileEditor(
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement =
-                Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+
             FilterChip(
-                selected =
-                    connectionType ==
-                            ConnectionType.USB,
+                selected = connectionType == ConnectionType.USB,
                 onClick = {
-                    if (!isArduinoConnected) {
-                        connectionType =
-                            ConnectionType.USB
+                    if (connectionType != ConnectionType.USB) {
+                        try {
+                            bluetoothService.disconnect()
+                        } catch (_: Exception) {}
+
+                        connectionType = ConnectionType.USB
                         connectionStatus = ""
+                        onArduinoConnectionChanged(false)
                     }
                 },
                 label = {
@@ -477,18 +479,20 @@ fun ProfileEditor(
                         modifier = Modifier.size(FilterChipDefaults.IconSize)
                     )
                 },
-                modifier =
-                    Modifier.weight(1f)
+                modifier = Modifier.weight(1f)
             )
+
             FilterChip(
-                selected =
-                    connectionType ==
-                            ConnectionType.BLUETOOTH,
+                selected = connectionType == ConnectionType.BLUETOOTH,
                 onClick = {
-                    if (!isArduinoConnected) {
-                        connectionType =
-                            ConnectionType.BLUETOOTH
+                    if (connectionType != ConnectionType.BLUETOOTH) {
+                        try {
+                            usbService.disconnect()
+                        } catch (_: Exception) {}
+
+                        connectionType = ConnectionType.BLUETOOTH
                         connectionStatus = ""
+                        onArduinoConnectionChanged(false)
                     }
                 },
                 label = {
@@ -501,8 +505,7 @@ fun ProfileEditor(
                         modifier = Modifier.size(FilterChipDefaults.IconSize)
                     )
                 },
-                modifier =
-                    Modifier.weight(1f)
+                modifier = Modifier.weight(1f)
             )
         }
         /*
@@ -647,6 +650,10 @@ fun ProfileEditor(
                     }
                 },
                 enabled = !connecting,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF78909C), // Isti modro-sivi odtenek
+                    contentColor = Color.White          // Bela barva za ikono in besedilo
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(64.dp)
@@ -875,6 +882,10 @@ fun ProfileEditor(
             enabled =
                 isArduinoConnected &&
                         !testing,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF1A73E8), // Opazna barva za glavno akcijo
+                contentColor = Color.White          // barva besedila/ikone na gumbu
+            ),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(90.dp)
@@ -906,142 +917,117 @@ fun ProfileEditor(
         * REZULTAT TESTA
         */
         if (testComparison != null) {
-            val result =
-                testComparison!!
+
+            val result = testComparison!!
+
             Card(
-                modifier =
-                    Modifier.fillMaxWidth(),
-                colors =
-                    CardDefaults.cardColors(
-                        containerColor =
-                            if (result.passed) {
-                                MaterialTheme
-                                    .colorScheme
-                                    .primaryContainer
-                            } else {
-                                MaterialTheme
-                                    .colorScheme
-                                    .errorContainer
-                            }
-                    )
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (result.passed) {
+                        Color(0xFF43A047) // Živo zelena
+                    } else {
+                        Color(0xFFFA0000) // Živo rdeča
+                    }
+                )
             ) {
                 Column(
-                    modifier =
-                        Modifier.padding(16.dp),
-                    verticalArrangement =
-                        Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        if (result.passed) {
-                            "PASS – KABEL JE USTREZEN"
+                        text = if (result.passed) {
+                            "✅ PASS – KABEL JE USTREZEN"
                         } else {
-                            "FAIL – KABEL NI USTREZEN"
+                            "❌ FAIL – KABEL NI USTREZEN"
                         },
-                        style =
-                            MaterialTheme
-                                .typography
-                                .titleLarge
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Color.White
                     )
-                    Text(testStatus)
-                    if (
-                        result.errors.isNotEmpty()
-                    ) {
-                        HorizontalDivider()
+
+                    Text(
+                        text = testStatus,
+                        color = Color.White.copy(alpha = 0.9f)
+                    )
+
+                    if (result.errors.isNotEmpty()) {
+
+                        HorizontalDivider(color = Color.White.copy(alpha = 0.3f))
+
                         Text(
-                            "Ugotovljene napake:",
-                            style =
-                                MaterialTheme
-                                    .typography
-                                    .titleMedium
+                            text = "Ugotovljene napake:",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White
                         )
+
                         result.errors.forEach { error ->
                             Text(
-                                "• $error"
+                                text = "• $error",
+                                color = Color.White
                             )
                         }
                     }
                 }
             }
-        } else if (
-            comparisonMessage.isNotBlank()
-        ) {
+
+        } else if (comparisonMessage.isNotBlank()) {
             Card(
-                Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
-                    Modifier.padding(12.dp)
+                    modifier = Modifier.padding(12.dp)
                 ) {
                     Text(testStatus)
                     Text(comparisonMessage)
                 }
             }
-        } else if (
-            testStatus.isNotBlank()
-        ) {
+        } else if (testStatus.isNotBlank()) {
             Text(testStatus)
         }
+
         /*
-        * IZMERJENE POVEZAVE / STATISTIKA
-        */
+         * IZMERJENE POVEZAVE / STATISTIKA
+         */
         if (rawResponse.isNotBlank()) {
             Card(
-                Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
-                    Modifier.padding(12.dp)
+                    modifier = Modifier.padding(12.dp)
                 ) {
                     Text(
-                        "Izmerjene povezave:"
+                        text = "Izmerjene povezave:"
                     )
                     Text(rawResponse)
                 }
             }
-        } else if (
-            testComparison == null &&
-            testStatus.isBlank()
-        ) {
+        } else if (testComparison == null && testStatus.isBlank()) {
             Card(
-                Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
-                    Modifier.padding(12.dp)
+                    modifier = Modifier.padding(12.dp)
                 ) {
                     Text(
-                        if (
-                            profile.referenceLearned
-                        ) {
+                        text = if (profile.referenceLearned) {
                             "Referenčni vzorec: NAUČEN"
                         } else {
                             "Referenčni vzorec: NI NAUČEN"
                         }
                     )
-                    Text(
-                        "Naučene povezave: " +
-                                "${profile.connections.size}"
-                    )
-                    if (
-                        profile.referenceLearned
-                    ) {
-                        Text(
-                            "Zadnje učenje: " +
-                                    profile.learnedDate
-                        )
+
+                    Text(text = "Naučene povezave: ${profile.connections.size}")
+
+                    if (profile.referenceLearned) {
+                        Text(text = "Zadnje učenje: ${profile.learnedDate}")
                     }
-                    Text(
-                        "Zadnji test: " +
-                                profile.lastTest
-                    )
-                    Text(
-                        "Uspešni testi: " +
-                                "${profile.passedTests}"
-                    )
-                    Text(
-                        "Neuspešni testi: " +
-                                "${profile.failedTests}"
-                    )
+
+                    Text(text = "Zadnji test: ${profile.lastTest}")
+                    Text(text = "Uspešni testi: ${profile.passedTests}")
+                    Text(text = "Neuspešni testi: ${profile.failedTests}")
                 }
             }
         }
+
         /*
         * UREJANJE PROFILA
         */
@@ -1049,6 +1035,10 @@ fun ProfileEditor(
             onClick = {
                 editMode = !editMode
             },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF78909C), // Umirjena modro-siva barva
+                contentColor = Color.White
+            ),
             modifier =
                 Modifier.fillMaxWidth()
         ) {
@@ -1111,6 +1101,10 @@ fun ProfileEditor(
                         )
                     )
                 },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF78909C), // Isti modro-sivi odtenek kot za "Uredi profil"
+                    contentColor = Color.White
+                ),
                 modifier =
                     Modifier.fillMaxWidth()
             ) {
@@ -1120,6 +1114,10 @@ fun ProfileEditor(
                 onClick = {
                     showSelfLearnScreen = true
                 },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF78909C), // Isti modro-sivi odtenek kot za "Uredi profil"
+                    contentColor = Color.White
+                ),
                 modifier =
                     Modifier.fillMaxWidth()
             ) {
