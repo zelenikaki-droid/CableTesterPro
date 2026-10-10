@@ -218,7 +218,7 @@ fun HomeScreen(
                 ) {}
 
                 Text(
-                    text = "USB-C",
+                    text = "",
                     style = MaterialTheme.typography.labelSmall,
                     color = if (viewModel.isArduinoConnected) {
                         Color(0xFF2E7D32)

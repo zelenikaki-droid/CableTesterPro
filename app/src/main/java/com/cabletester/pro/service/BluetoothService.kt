@@ -601,16 +601,41 @@ class BluetoothService(
                 /*
                  * Preberemo odgovor.
                  */
-                val response =
-                    readLineWithTimeout(
+                var response = ""
+
+                val deadline =
+                    System.currentTimeMillis() + RESPONSE_TIMEOUT_MS
+
+                while (System.currentTimeMillis() < deadline) {
+                    val line = readLineWithTimeout(
                         inputStream,
-                        RESPONSE_TIMEOUT_MS
+                        deadline - System.currentTimeMillis()
                     )
 
-                Log.d(
-                    TAG,
-                    "Odgovor: $response"
-                )
+                    Log.d(TAG, "Bluetooth vrstica: $line")
+
+                    if (
+                        line == "BT_OK" ||
+                        line == "TEST_OK" ||
+                        line == "Cable Tester Ready"
+                    ) {
+                        continue
+                    }
+
+                    if (isValidArduinoResponse(line)) {
+                        response = line
+                        break
+                    }
+                }
+
+                if (response.isBlank()) {
+                    throw IOException(
+                        "Arduino ni vrnil veljavnega rezultata testa."
+                    )
+                }
+
+                onResult(response)
+                return@execute
 
                 if (response.isBlank()) {
 

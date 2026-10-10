@@ -358,7 +358,7 @@ fun ProfileEditor(
                                                         ConnectionType.BLUETOOTH
 
                                                     connectionStatus =
-                                                        "HC-05 je povezan."
+                                                        ""
 
                                                     onArduinoConnectionChanged(
                                                         true
@@ -563,7 +563,7 @@ fun ProfileEditor(
                                                     false
 
                                                 connectionStatus =
-                                                    "USB Arduino je povezan."
+                                                    ""
 
                                                 onArduinoConnectionChanged(
                                                     true

@@ -220,7 +220,7 @@ class USBService(
         executor.execute {
             try {
                 // Arduino se lahko po odprtju USB povezave ponovno zažene.
-                Thread.sleep(1800)
+                Thread.sleep(150)
 
                 var validResult: String? = null
 
@@ -240,7 +240,7 @@ class USBService(
                     }
 
                     if (attempt == 0) {
-                        Thread.sleep(300)
+                        Thread.sleep(150)
                     }
                 }
 
