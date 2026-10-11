@@ -43,7 +43,8 @@ fun ProfileEditor(
     onLearnSave: (List<PinConnection>) -> Unit,
     onTest: (List<PinConnection>) -> TestComparison?,
     isArduinoConnected: Boolean,
-    onArduinoConnectionChanged: (Boolean) -> Unit
+    onArduinoConnectionChanged: (Boolean) -> Unit,
+    onFailFlash: () -> Unit
 ) {
     if (profile == null) {
         Text(

@@ -392,10 +392,15 @@ fun HomeScreen(
                     }
                 },
 
+
                 isArduinoConnected = viewModel.isArduinoConnected,
 
                 onArduinoConnectionChanged = {
                     viewModel.updateArduinoConnection(it)
+                },
+
+                onFailFlash = {
+                    failFlashKey++
                 }
             )
         }
