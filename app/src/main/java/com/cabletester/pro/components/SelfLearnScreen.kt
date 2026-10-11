@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.cabletester.pro.model.PinConnection
+import com.cabletester.pro.service.BluetoothService
 import com.cabletester.pro.service.USBService
 
 @Composable
@@ -17,6 +18,8 @@ fun SelfLearnScreen(
     articleCode: String,
     articleName: String,
     usbService: USBService,
+    bluetoothService: BluetoothService, // DODANO
+    connectionType: String,              // DODANO ("USB" ali "BT")
     isArduinoConnected: Boolean,
     onSave: (List<PinConnection>) -> Unit,
     onBack: () -> Unit
@@ -35,9 +38,9 @@ fun SelfLearnScreen(
     var status by remember {
         mutableStateOf(
             if (isArduinoConnected) {
-                "Arduino je povezan."
+                "Tester je povezan preko $connectionType."
             } else {
-                "Najprej poveži Arduino na zaslonu TEST."
+                "Najprej poveži napravo na zaslonu TEST."
             }
         )
     }
@@ -62,13 +65,13 @@ fun SelfLearnScreen(
         HorizontalDivider()
 
         Text(
-            "▶ SELF LEARN",
+            "▶ SELF LEARN (${connectionType})",
             style = MaterialTheme.typography.headlineSmall
         )
 
         if (!learned) {
             Text(
-                "Priklopi referenčni kabel in zaženi učenje."
+                "Priklopi referenčni kabel in zaženi učenje vzorca."
             )
 
             Text("Stanje: $status")
@@ -76,89 +79,78 @@ fun SelfLearnScreen(
             Button(
                 onClick = {
                     learning = true
-                    status = "Merim povezave z Arduinom..."
+                    status = "Merim povezave ($connectionType)..."
 
-                    usbService.sendTest(
-                        onResult = { response ->
-                            mainHandler.post {
-                                val cleanResponse = response.trim()
+                    // Skupna funkcija za obdelavo odgovora iz obeh servisov
+                    val handleResponse: (String) -> Unit = { response ->
+                        mainHandler.post {
+                            val cleanResponse = response.trim()
 
-                                if (
-                                    cleanResponse == "NO_CONNECTIONS" ||
-                                    cleanResponse.isBlank()
-                                ) {
-                                    status =
-                                        "Ni zaznanih povezav. Preveri kabel."
-                                    learning = false
-                                } else {
-                                    val parts = cleanResponse
-                                        .split(",")
-                                        .map { it.trim() }
-                                        .filter { it.isNotEmpty() }
+                            if (cleanResponse == "NO_CONNECTIONS" || cleanResponse.isBlank()) {
+                                status = "Ni zaznanih povezav. Preveri referenčni kabel."
+                                learning = false
+                            } else {
+                                val parts = cleanResponse
+                                    .split(",")
+                                    .map { it.trim() }
+                                    .filter { it.isNotEmpty() }
 
-                                    val channel =
-                                        """(?:[AB](?:[1-9]|_SHIELD))"""
+                                val channel = """(?:[AB](?:[1-9]|_SHIELD))"""
+                                val pattern = Regex("""^($channel)-($channel)$""")
 
-                                    val pattern = Regex(
-                                        """^($channel)-($channel)$"""
-                                    )
-
-                                    val parsed = parts.mapNotNull { item ->
-                                        val match =
-                                            pattern.matchEntire(item)
-
-                                        if (match != null) {
-                                            PinConnection(
-                                                fromChannel =
-                                                    match.groupValues[1],
-                                                toChannel =
-                                                    match.groupValues[2]
-                                            )
-                                        } else {
-                                            null
-                                        }
-                                    }.distinct()
-
-                                    if (
-                                        parsed.isEmpty() ||
-                                        parsed.size != parts.size
-                                    ) {
-                                        status =
-                                            "Neveljaven Arduino odgovor: " +
-                                                    cleanResponse
+                                val parsed = parts.mapNotNull { item ->
+                                    val match = pattern.matchEntire(item)
+                                    if (match != null) {
+                                        PinConnection(
+                                            fromChannel = match.groupValues[1],
+                                            toChannel = match.groupValues[2]
+                                        )
                                     } else {
-                                        learnedConnections = parsed
-                                        onSave(parsed)
-
-                                        learned = true
-                                        status =
-                                            "Referenčni vzorec uspešno shranjen."
+                                        null
                                     }
+                                }.distinct()
 
-                                    learning = false
+                                if (parsed.isEmpty() || parsed.size != parts.size) {
+                                    status = "Neveljaven odgovor naprave: $cleanResponse"
+                                } else {
+                                    learnedConnections = parsed
+                                    onSave(parsed)
+                                    learned = true
+                                    status = "Referenčni vzorec uspešno naučen in shranjen."
                                 }
-                            }
-                        },
-                        onError = { error ->
-                            mainHandler.post {
-                                status = error
                                 learning = false
                             }
                         }
-                    )
+                    }
+
+                    val handleError: (String) -> Unit = { error ->
+                        mainHandler.post {
+                            status = "Napaka pri učenju: $error"
+                            learning = false
+                        }
+                    }
+
+                    // DINAMIČNO PREKLAPLJANJE MED SERVISI
+                    if (connectionType == "USB") {
+                        usbService.sendTest(
+                            onResult = handleResponse,
+                            onError = handleError
+                        )
+                    } else {
+                        bluetoothService.sendTest(
+                            onResult = handleResponse,
+                            onError = handleError
+                        )
+                    }
                 },
-                enabled = isArduinoConnected &&
-                        !learning &&
-                        !learned,
+                enabled = isArduinoConnected && !learning && !learned,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    if (learning) "UČENJE..." else "ZAČNI UČENJE"
-                )
+                Text(if (learning) "UČENJE..." else "ZAČNI UČENJE")
             }
         } else {
             Text(
@@ -178,9 +170,7 @@ fun SelfLearnScreen(
             )
 
             learnedConnections.forEach { connection ->
-                Text(
-                    "${connection.fromChannel}-${connection.toChannel}"
-                )
+                Text("${connection.fromChannel}-${connection.toChannel}")
             }
         }
 

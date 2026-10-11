@@ -194,9 +194,9 @@ fun ProfileEditor(
             articleCode = profile.articleCode,
             articleName = profile.name,
             usbService = usbService,
-            isArduinoConnected =
-                isArduinoConnected &&
-                        connectionType == ConnectionType.USB,
+            bluetoothService = bluetoothService, // DODANO
+            connectionType = if (connectionType == ConnectionType.USB) "USB" else "BT", // DODANO
+            isArduinoConnected = isArduinoConnected, // POPRAVLJENO: velja za katerokoli aktivno povezavo
             onSave = onLearnSave,
             onBack = {
                 showSelfLearnScreen = false
@@ -204,6 +204,7 @@ fun ProfileEditor(
         )
         return
     }
+
 
     var editMode by remember {
         mutableStateOf(false)
