@@ -226,6 +226,7 @@ class BluetoothService(
                     )
                 }
 
+
                 /*
                  * Zapremo morebitno staro povezavo.
                  */
