@@ -32,6 +32,7 @@ import com.cabletester.pro.service.USBService
 import com.cabletester.pro.viewmodel.TestComparison
 import android.app.Activity
 import android.content.pm.ActivityInfo
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.filled.ScreenRotation
 
 private enum class ConnectionType {
@@ -211,6 +212,17 @@ fun ProfileEditor(
         return
     }
 
+    var showPinDialog by remember {
+        mutableStateOf(false)
+    }
+
+    var pinInput by remember {
+        mutableStateOf("")
+    }
+
+    var isProfileUnlocked by remember {
+        mutableStateOf(false)
+    }
 
     var editMode by remember {
         mutableStateOf(false)
@@ -643,6 +655,7 @@ fun ProfileEditor(
                             toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP, 200)
                             testStatus = "Test uspešno zaključen."
                         } else {
+                            onFailFlash()
                             toneGenerator.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 2500)
                             testStatus = "Test ni uspešen."
                         }
@@ -817,16 +830,92 @@ fun ProfileEditor(
                 }
             }
         }
+        /*
+         * UREJANJE PROFILA
+         */
         Button(
-            onClick = { editMode = !editMode },
+            onClick = {
+                if (editMode) {
+                    // Če urejanje že teče, ga preprosto zapremo in zaklenemo nazaj
+                    editMode = false
+                    isProfileUnlocked = false
+                } else {
+                    if (isProfileUnlocked) {
+                        editMode = true
+                    } else {
+                        // Ponastavimo vnos in prikažemo okno za PIN
+                        pinInput = ""
+                        showPinDialog = true
+                    }
+                }
+            },
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.secondary,
                 contentColor = MaterialTheme.colorScheme.onSecondary
             ),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(if (editMode) "SKRIJ UREJANJE" else "UREDI PROFIL")
+            Text(
+                text = if (editMode) "SKRIJ UREJANJE" else "UREDI PROFIL"
+            )
         }
+        // Pogovorno okno za vnos PIN kode
+        if (showPinDialog) {
+            AlertDialog(
+                onDismissRequest = { showPinDialog = false },
+                title = { Text("Zaščita profila") },
+                text = {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text("Vnesite skrbniški PIN za urejanje nastavitev in referenčnih vzorcev:")
+                        OutlinedTextField(
+                            value = pinInput,
+                            onValueChange = { input ->
+                                // Dovolimo samo številke in največ 4 znake
+                                if (input.all { it.isDigit() } && input.length <= 4) {
+                                    pinInput = input
+                                }
+                            },
+                            label = { Text("PIN koda") },
+                            singleLine = true,
+                            // NOVA VRSTICA: Skrije številke in prikaže pikice
+                            visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                            // NOVA VRSTICA: Odpre numerično tipkovnico (samo številke) na telefonu
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            if (pinInput == "1243") { // <-- TUKAJ LAHKO SPREMENITE VAŠ PIN
+                                isProfileUnlocked = true
+                                showPinDialog = false
+                                editMode = true
+                            } else {
+                                // Če je PIN napačen, lahko izpišete opozorilo ali samo počistite polje
+                                pinInput = ""
+                            }
+                        }
+                    ) {
+                        Text("POTRDI")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showPinDialog = false }
+                    ) {
+                        Text("PREKLIČI")
+                    }
+                }
+            )
+        }
+
         if (editMode) {
             HorizontalDivider()
             Text("Urejanje profila")
