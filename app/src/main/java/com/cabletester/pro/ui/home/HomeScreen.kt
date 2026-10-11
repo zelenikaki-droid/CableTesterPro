@@ -4,6 +4,7 @@ package com.cabletester.pro.ui.home
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -20,12 +21,28 @@ import com.cabletester.pro.components.ProfileEditor
 import com.cabletester.pro.model.CableProfile
 import com.cabletester.pro.model.TestRecord
 import com.cabletester.pro.viewmodel.MainViewModel
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
 
 @Composable
 fun HomeScreen(
     viewModel: MainViewModel
 ) {
     val context = LocalContext.current
+    var failFlashKey by remember {
+        mutableIntStateOf(0)
+    }
+
+    var showFailFrame by remember {
+        mutableStateOf(false)
+    }
+    LaunchedEffect(failFlashKey) {
+        if (failFlashKey > 0) {
+            showFailFrame = true
+            delay(1000)
+            showFailFrame = false
+        }
+    }
 
     var pendingRestoreJson by remember {
         mutableStateOf<String?>(null)
@@ -183,11 +200,14 @@ fun HomeScreen(
         )
     }
 
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .safeDrawingPadding()
     ) {
+        Row(
+            modifier = Modifier.fillMaxSize()
+        ) {
 
         // LEVA STRAN
         Column(
@@ -402,6 +422,19 @@ fun HomeScreen(
                 onFailFlash = {
                     failFlashKey++
                 }
+            )
+        }
+    }
+
+        // RDEČI OKVIR OB NEUSPEŠNEM TESTU
+        if (showFailFrame) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .border(
+                        width = 8.dp,
+                        color = Color.Red
+                    )
             )
         }
     }

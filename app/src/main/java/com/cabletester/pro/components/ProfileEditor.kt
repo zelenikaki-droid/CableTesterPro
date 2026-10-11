@@ -22,6 +22,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.cabletester.pro.model.CableProfile
@@ -29,6 +30,9 @@ import com.cabletester.pro.model.PinConnection
 import com.cabletester.pro.service.BluetoothService
 import com.cabletester.pro.service.USBService
 import com.cabletester.pro.viewmodel.TestComparison
+import android.app.Activity
+import android.content.pm.ActivityInfo
+import androidx.compose.material.icons.filled.ScreenRotation
 
 private enum class ConnectionType {
     USB,
@@ -55,6 +59,7 @@ fun ProfileEditor(
     }
 
     val context = LocalContext.current
+    val activity = context as? Activity
     val mainHandler = remember {
         Handler(Looper.getMainLooper())
     }
@@ -340,22 +345,50 @@ fun ProfileEditor(
             .padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Card(
-            Modifier.fillMaxWidth()
+
+        // Vrstica, ki združi kartico artikla in gumb za obračanje zaslona
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Column(
-                Modifier.padding(6.dp)
+            Card(
+                modifier = Modifier.weight(1f) // Kartica zavzame ves preostali prostor
             ) {
-                Text(
-                    profile.articleCode,
-                    style = MaterialTheme.typography.titleSmall
-                )
-                Text(
-                    profile.name,
-                    style = MaterialTheme.typography.titleMedium
+                Column(Modifier.padding(6.dp)) {
+                    Text(
+                        profile.articleCode,
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Text(
+                        profile.name,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            }
+
+            // Gumb za obračanje aplikacije na glavo (v horizontali)
+            IconButton(
+                onClick = {
+                    activity?.let { act ->
+                        // Preverimo trenutno usmerjenost in jo obrnemo na glavo
+                        if (act.requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE) {
+                            act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                        } else {
+                            act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+                        }
+                    }
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ScreenRotation,
+                    contentDescription = "Obrni zaslon",
+                    tint = Color(0xFF78909C), // Uporabimo enako sivo-modro barvo kot za gumbe
+                    modifier = Modifier.size(28.dp)
                 )
             }
         }
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
