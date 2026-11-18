@@ -34,6 +34,7 @@ import android.app.Activity
 import android.content.pm.ActivityInfo
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.filled.ScreenRotation
+import androidx.compose.ui.focus.onFocusChanged
 
 private enum class ConnectionType {
     USB,
@@ -239,7 +240,17 @@ fun ProfileEditor(
     var notes by remember {
         mutableStateOf(profile.notes)
     }
+    // Pri novem kablu se privzeta vsebina polj pobriše ob prvem kliku
+    var clearCodeOnFocus by remember { mutableStateOf(false) }
+    var clearNameOnFocus by remember { mutableStateOf(false) }
 
+    LaunchedEffect(profile) {
+        articleCode = profile.articleCode
+        articleName = profile.articleName
+        notes = profile.notes
+        clearCodeOnFocus = profile.articleCode.startsWith("NOV-")
+        clearNameOnFocus = profile.articleName == "Nov profil"
+    }
     LaunchedEffect(profile) {
         articleCode = profile.articleCode
         articleName = profile.articleName
@@ -923,13 +934,27 @@ fun ProfileEditor(
                 value = articleCode,
                 onValueChange = { articleCode = it },
                 label = { Text("Koda artikla") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { focus ->
+                        if (focus.isFocused && clearCodeOnFocus) {
+                            articleCode = ""
+                            clearCodeOnFocus = false
+                        }
+                    }
             )
             OutlinedTextField(
                 value = articleName,
                 onValueChange = { articleName = it },
                 label = { Text("Naziv artikla") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { focus ->
+                        if (focus.isFocused && clearNameOnFocus) {
+                            articleName = ""
+                            clearNameOnFocus = false
+                        }
+                    }
             )
             OutlinedTextField(
                 value = notes,
